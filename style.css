@@ -1,0 +1,35 @@
+body {
+  font-family: Arial, sans-serif;
+  padding: 20px;
+  background: #f4f4f4;
+}
+
+h1 {
+  color: #4CAF50;
+}
+
+form input, form button {
+  padding: 10px;
+  margin: 5px 0;
+  width: 100%;
+}
+
+li {
+  background: white;
+  padding: 10px;
+  margin-top: 10px;
+  list-style: none;
+  border-left: 5px solid green;
+}
+
+.safe {
+  border-left: 5px solid green;
+}
+
+.warning {
+  border-left: 5px solid orange;
+}
+
+.expired {
+  border-left: 5px solid red;
+}
