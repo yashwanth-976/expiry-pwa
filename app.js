@@ -113,7 +113,9 @@ function loadProducts() {
 
 // Register Service Worker
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("service-worker.js");
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./service-worker.js");
+  });
 }
 
 function showNotification(title, message) {
@@ -124,4 +126,5 @@ function showNotification(title, message) {
     });
   }
 }
+
 
