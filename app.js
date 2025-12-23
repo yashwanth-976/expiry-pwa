@@ -88,14 +88,16 @@ function loadProducts() {
     const li = document.createElement("li");
     li.className = statusClass;
 
-    li.innerHTML = `
-      <strong>${cursor.value.name}</strong><br>
-      Expires on: ${cursor.value.expiry}<br>
-      Status: ${statusText} (${daysLeft} days left)
-      <br>
-      <button onclick="deleteProduct(${cursor.key})">Delete</button>
-    `;
-
+   li.innerHTML = `
+  <strong>${cursor.value.name}</strong><br>
+  Expires on: ${cursor.value.expiry}<br>
+  Status: ${statusText} (${daysLeft} days left)
+  <br>
+  <button class="delete-btn" onclick="deleteProduct(${cursor.key})">
+    Delete
+  </button>
+`;
+    
     list.appendChild(li);
 
     // 🔔 Notify only when app is opened (mobile-safe)
@@ -137,6 +139,7 @@ function showNotification(title, message) {
     });
   }
 }
+
 
 
 
