@@ -100,9 +100,9 @@ function loadProducts() {
   Expires on: ${cursor.value.expiry}<br>
   Status: ${statusText} (${daysLeft} days left)
   <br>
-  <button onclick="editProduct(${cursor.key}, '${cursor.value.name}', '${cursor.value.expiry}')">
-  Edit
-</button>
+ <button onclick="editProduct(${cursor.key}, '${cursor.value.name}', '${cursor.value.expiry}')">
+    Modify
+  </button>
 <button class="delete-btn" onclick="deleteProduct(${cursor.key})">
   Delete
 </button>
@@ -157,6 +157,7 @@ function showNotification(title, message) {
     });
   }
 }
+
 
 
 
