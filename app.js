@@ -35,10 +35,12 @@ request.onerror = function () {
 };
 
 // Add product
+let editId = null;
+
 document.getElementById("productForm").addEventListener("submit", function (e) {
   e.preventDefault();
 
-  if (!dbReady) return; // Mobile safety
+  if (!dbReady) return;
 
   const name = document.getElementById("name").value;
   const expiry = document.getElementById("expiry").value;
@@ -46,10 +48,15 @@ document.getElementById("productForm").addEventListener("submit", function (e) {
   const tx = db.transaction("products", "readwrite");
   const store = tx.objectStore("products");
 
-  store.add({ name, expiry });
+  if (editId !== null) {
+    store.put({ id: editId, name, expiry });
+    editId = null;
+  } else {
+    store.add({ name, expiry });
+  }
 
   tx.oncomplete = function () {
-    loadProducts();   // 🔥 This fixes empty list issue
+    loadProducts();
     document.getElementById("productForm").reset();
   };
 });
@@ -93,9 +100,12 @@ function loadProducts() {
   Expires on: ${cursor.value.expiry}<br>
   Status: ${statusText} (${daysLeft} days left)
   <br>
-  <button class="delete-btn" onclick="deleteProduct(${cursor.key})">
-    Delete
-  </button>
+  <button onclick="editProduct(${cursor.key}, '${cursor.value.name}', '${cursor.value.expiry}')">
+  Edit
+</button>
+<button class="delete-btn" onclick="deleteProduct(${cursor.key})">
+  Delete
+</button>
 `;
     
     list.appendChild(li);
@@ -123,6 +133,14 @@ function deleteProduct(id) {
   };
 }
 
+let editId = null;
+
+function editProduct(id, name, expiry) {
+  editId = id;
+  document.getElementById("name").value = name;
+  document.getElementById("expiry").value = expiry;
+}
+
 
 // Register Service Worker
 if ("serviceWorker" in navigator) {
@@ -139,6 +157,7 @@ function showNotification(title, message) {
     });
   }
 }
+
 
 
 
