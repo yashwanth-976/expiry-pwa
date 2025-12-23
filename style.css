@@ -34,17 +34,4 @@ li {
   border-left: 5px solid red;
 }
 
-button {
-  margin-top: 6px;
-  padding: 6px 10px;
-  background-color: #e53935;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-button:hover {
-  background-color: #c62828;
-}
 
