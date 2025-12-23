@@ -1,12 +1,4 @@
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("service-worker.js")
-      .then(() => console.log("Service Worker Registered"))
-      .catch(err => console.log("SW registration failed:", err));
-  });
-}
-
-if ("Notification" in window) {
+if ("Notification" in window && Notification.permission !== "granted") {
   Notification.requestPermission();
 }
 
@@ -35,7 +27,6 @@ request.onerror = function () {
 };
 
 // Add product
-let editId = null;
 
 document.getElementById("productForm").addEventListener("submit", function (e) {
   e.preventDefault();
@@ -157,6 +148,7 @@ function showNotification(title, message) {
     });
   }
 }
+
 
 
 
