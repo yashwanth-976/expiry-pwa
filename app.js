@@ -11,10 +11,11 @@ if ("Notification" in window) {
 }
 
 let db;
+let dbReady = false;
 
 const request = indexedDB.open("expiryDB", 1);
 
-// Create database structure
+
 request.onupgradeneeded = function (event) {
   db = event.target.result;
   db.createObjectStore("products", {
@@ -23,13 +24,12 @@ request.onupgradeneeded = function (event) {
   });
 };
 
-// Success
 request.onsuccess = function (event) {
   db = event.target.result;
-  loadProducts();
+  dbReady = true;
+  loadProducts(); // Load ONLY when DB is ready
 };
 
-// Error
 request.onerror = function () {
   console.log("Database failed to open");
 };
@@ -38,75 +38,86 @@ request.onerror = function () {
 document.getElementById("productForm").addEventListener("submit", function (e) {
   e.preventDefault();
 
+  if (!dbReady) return; // Mobile safety
+
   const name = document.getElementById("name").value;
   const expiry = document.getElementById("expiry").value;
 
-  const transaction = db.transaction(["products"], "readwrite");
-  const store = transaction.objectStore("products");
+  const tx = db.transaction("products", "readwrite");
+  const store = tx.objectStore("products");
 
-  store.add({
-    name: name,
-    expiry: expiry
-  });
+  store.add({ name, expiry });
 
-  transaction.oncomplete = function () {
-    loadProducts();
+  tx.oncomplete = function () {
+    loadProducts();   // 🔥 This fixes empty list issue
     document.getElementById("productForm").reset();
   };
 });
 
 // Load products
 function loadProducts() {
+  if (!dbReady) return; // Mobile safety
+
   const list = document.getElementById("productList");
   list.innerHTML = "";
 
-  const transaction = db.transaction(["products"], "readonly");
-  const store = transaction.objectStore("products");
+  const tx = db.transaction("products", "readonly");
+  const store = tx.objectStore("products");
 
   const today = new Date();
 
   store.openCursor().onsuccess = function (event) {
     const cursor = event.target.result;
+    if (!cursor) return;
 
-    if (cursor) {
-      const expiryDate = new Date(cursor.value.expiry);
-      const diffTime = expiryDate - today;
-      const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const expiryDate = new Date(cursor.value.expiry);
+    const diffTime = expiryDate - today;
+    const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-      let statusClass = "safe";
-      let statusText = "Safe";
+    let statusClass = "safe";
+    let statusText = "Safe";
 
-      if (daysLeft <= 0) {
-        statusClass = "expired";
-        statusText = "Expired";
-
-        showNotification(
-          "❌ Product Expired",
-          `${cursor.value.name} has expired!`
-        );
-      } 
-      else if (daysLeft <= 1) {
-        statusClass = "warning";
-        statusText = "Expiring Tomorrow";
-
-        showNotification(
-          "⚠️ Expiry Alert",
-          `${cursor.value.name} expires tomorrow`
-        );
-      }
-
-      const li = document.createElement("li");
-      li.className = statusClass;
-      li.innerHTML = `
-        <strong>${cursor.value.name}</strong><br>
-        Expires on: ${cursor.value.expiry}<br>
-        Status: ${statusText} (${daysLeft} days left)
-      `;
-
-      list.appendChild(li);
-
-      cursor.continue(); // VERY IMPORTANT
+    if (daysLeft <= 0) {
+      statusClass = "expired";
+      statusText = "Expired";
+    } else if (daysLeft <= 1) {
+      statusClass = "warning";
+      statusText = "Expiring Tomorrow";
     }
+
+    const li = document.createElement("li");
+    li.className = statusClass;
+
+    li.innerHTML = `
+      <strong>${cursor.value.name}</strong><br>
+      Expires on: ${cursor.value.expiry}<br>
+      Status: ${statusText} (${daysLeft} days left)
+      <br>
+      <button onclick="deleteProduct(${cursor.key})">Delete</button>
+    `;
+
+    list.appendChild(li);
+
+    // 🔔 Notify only when app is opened (mobile-safe)
+    if (daysLeft === 1 && Notification.permission === "granted") {
+      new Notification("Expiry Alert", {
+        body: `${cursor.value.name} expires tomorrow`
+      });
+    }
+
+    cursor.continue();
+  };
+}
+function deleteProduct(id) {
+  if (!dbReady) return;
+
+  const tx = db.transaction("products", "readwrite");
+  const store = tx.objectStore("products");
+
+  store.delete(id);
+
+  tx.oncomplete = function () {
+    loadProducts(); // Refresh UI
   };
 }
 
@@ -126,5 +137,6 @@ function showNotification(title, message) {
     });
   }
 }
+
 
 
