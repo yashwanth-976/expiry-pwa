@@ -1,12 +1,16 @@
-if ("Notification" in window && Notification.permission !== "granted") {
-  Notification.requestPermission();
+// Register Service Worker
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./service-worker.js");
+  });
 }
 
+// IndexedDB Setup
 let db;
 let dbReady = false;
+let editId = null;
 
 const request = indexedDB.open("expiryDB", 1);
-
 
 request.onupgradeneeded = function (event) {
   db = event.target.result;
@@ -19,19 +23,21 @@ request.onupgradeneeded = function (event) {
 request.onsuccess = function (event) {
   db = event.target.result;
   dbReady = true;
-  loadProducts(); // Load ONLY when DB is ready
+  loadProducts();
 };
 
 request.onerror = function () {
   console.log("Database failed to open");
 };
 
-// Add product
-
+// Add / Update Product
 document.getElementById("productForm").addEventListener("submit", function (e) {
   e.preventDefault();
-
   if (!dbReady) return;
+
+  if ("Notification" in window && Notification.permission !== "granted") {
+    Notification.requestPermission();
+  }
 
   const name = document.getElementById("name").value;
   const expiry = document.getElementById("expiry").value;
@@ -52,9 +58,9 @@ document.getElementById("productForm").addEventListener("submit", function (e) {
   };
 });
 
-// Load products
+// Load Products
 function loadProducts() {
-  if (!dbReady) return; // Mobile safety
+  if (!dbReady) return;
 
   const list = document.getElementById("productList");
   list.innerHTML = "";
@@ -69,8 +75,7 @@ function loadProducts() {
     if (!cursor) return;
 
     const expiryDate = new Date(cursor.value.expiry);
-    const diffTime = expiryDate - today;
-    const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const daysLeft = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
 
     let statusClass = "safe";
     let statusText = "Safe";
@@ -86,22 +91,21 @@ function loadProducts() {
     const li = document.createElement("li");
     li.className = statusClass;
 
-   li.innerHTML = `
-  <strong>${cursor.value.name}</strong><br>
-  Expires on: ${cursor.value.expiry}<br>
-  Status: ${statusText} (${daysLeft} days left)
-  <br>
- <button onclick="editProduct(${cursor.key}, '${cursor.value.name}', '${cursor.value.expiry}')">
-    Modify
-  </button>
-<button class="delete-btn" onclick="deleteProduct(${cursor.key})">
-  Delete
-</button>
-`;
-    
+    li.innerHTML = `
+      <strong>${cursor.value.name}</strong><br>
+      Expires on: ${cursor.value.expiry}<br>
+      Status: ${statusText} (${daysLeft} days left)
+      <br>
+      <button onclick="editProduct(${cursor.key}, '${cursor.value.name}', '${cursor.value.expiry}')">
+        Modify
+      </button>
+      <button class="delete-btn" onclick="deleteProduct(${cursor.key})">
+        Delete
+      </button>
+    `;
+
     list.appendChild(li);
 
-    // 🔔 Notify only when app is opened (mobile-safe)
     if (daysLeft === 1 && Notification.permission === "granted") {
       new Notification("Expiry Alert", {
         body: `${cursor.value.name} expires tomorrow`
@@ -111,6 +115,8 @@ function loadProducts() {
     cursor.continue();
   };
 }
+
+// Delete Product
 function deleteProduct(id) {
   if (!dbReady) return;
 
@@ -120,38 +126,13 @@ function deleteProduct(id) {
   store.delete(id);
 
   tx.oncomplete = function () {
-    loadProducts(); // Refresh UI
+    loadProducts();
   };
 }
 
-let editId = null;
-
+// Edit Product
 function editProduct(id, name, expiry) {
   editId = id;
   document.getElementById("name").value = name;
   document.getElementById("expiry").value = expiry;
 }
-
-
-// Register Service Worker
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./service-worker.js");
-  });
-}
-
-function showNotification(title, message) {
-  if (Notification.permission === "granted") {
-    new Notification(title, {
-      body: message,
-      icon: "icon.png" // optional
-    });
-  }
-}
-
-
-
-
-
-
-
